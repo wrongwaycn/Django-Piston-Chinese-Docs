@@ -3,66 +3,63 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Django Piston's documentation!
-=========================================
+欢迎查看Django Piston文档
+=========================
 
-Get the `latest version (0.2.2) here <http://bitbucket.org/jespern/django-piston/downloads/django-piston-0.2.2.tar.gz>`_.
+当前稳定版本为0.2.2 <http://bitbucket.org/jespern/django-piston/downloads/django-piston-0.2.2.tar.gz>`_.
 
-Read the [[ReleaseNotes|release notes / what's new]] for 0.2.2.
+**NEW**: 讨论组托管于 `Google Groups <http://groups.google.com/group/django-piston>`_.
 
-**NEW**: Discussion group `is hosted on Google Groups <http://groups.google.com/group/django-piston>`_.
+生产版本
+--------
 
-Development Version
--------------------
+当前开发版版本为 ``0.3dev`` ，该文档正是根据此版本而建。
 
-The development version is currently ``0.3dev`` in ``django-piston-oauth2`` `here <https://bitbucket.org/jespern/django-piston-oauth2>`_, and this documentation is built with it.
+用于Django中创建RESTful API的轻型框架
+-------------------------------------
 
-A mini-framework for Django for creating RESTful APIs
------------------------------------------------------
+Piston是一个相对轻型的Django应用，用于为网站创建应用编程接口(API)。
 
-Piston is a relatively small Django application that lets you\\
-create application programming interfaces (API) for your sites.
+Piston有如下特点：
 
-It has several unique features:
+* 与Django原生机制相互结合
+* 支持OAuth，同时也支持 Basic/Digest 和自定义认证
+* 无须与models绑定，支持任何资源
+* 支持JSON, YAML, Python Pickle & XML (和 `HATEOAS <http://blogs.sun.com/craigmcc/entry/why_hateoas>`_.)
+* 自带一组易用性好，重用性强的Python类库
+* 推崇正确地使用HTTP (还有状态码, ...)
+* 内置表单验证 (可选，由Django本身实现)，对客户端请求进行限制等功能
+* 支持流输出 :ref:`streaming <streaming>`, 只占用很少的内存
+* 不影响用户原来的开发方式。
 
-* Ties into Django's internal mechanisms.
-* Supports OAuth out of the box (as well as Basic/Digest or custom auth.)
-* Doesn't require tying to models, allowing arbitrary resources.
-* Speaks JSON, YAML, Python Pickle & XML (and `HATEOAS <http://blogs.sun.com/craigmcc/entry/why_hateoas>`_.)
-* Ships with a convenient reusable library in Python
-* Respects and encourages proper use of HTTP (status codes, ...)
-* Has built in (optional) form validation (via Django), throttling, etc.
-* Supports :ref:`streaming <streaming>`, with a small memory footprint.
-* Stays out of your way.
+**NB**: Piston内置OAuth，但并不要求用户必须使用OAuth。
+Piston附带了一些关于如何使用OAuth简单的例子，开发者可以做为参考。(consumer/token models,urls等等)
 
-**NB**: OAuth ships with piston for now, but you are not required to use it. It simply provides some boilerplate in case you want to use it later (consumer/token models, urls, etc.)
+社区知识库
+----------
 
-About The Community Repository
-------------------------------
+通过社区知识库，开发者能够为Piston的发展提供新鲜空气，创建更多活跃的讨论。
 
-With the community repository we want to give new air to this project and create more active community in the development of this great tool.
+安装
+----
 
-Installation
-------------
+官方稳定版是 ``0.2.2`` ，主干代码托管在bitbucket上，由于本文档所描述的版本是开发版而非稳定版，因此在使用Piston时留意当前版本信息。
 
-The official stable version is ``0.2.2``, the code in the master branch in bitbucket is not currently that, so, take care with the documentation.
+Jesper Noehr 另外创建了一个分支 : `django-piston-oauth2 <https://bitbucket.org/jespern/django-piston-oauth2>`_ 
+该分支对oauth2提供了支持，同样也托管在 `Github <https://github.com/django-piston/django-piston-oauth2>`_
 
-There is a second repo of Jesper Noehr: `django-piston-oauth2 <https://bitbucket.org/jespern/django-piston-oauth2>`_ which has recent version of piston with oauth2 support.
-
-The Community repo lives on `Github <https://github.com/django-piston/django-piston-oauth2>`_
-
-Documentation
--------------
+文档
+----
 
 .. toctree::
    :maxdepth: 4
 
    documentation
 
-Fully functional example
-------------------------
+完整的例子
+----------
 
-Examples speak louder than documentation:
+例子比文档更有说服力：
 
  * urls.py::
 
@@ -85,7 +82,7 @@ Examples speak louder than documentation:
          url(r'^other/(?P<username>[^/]+)/(?P<data>.+)/$', arbitrary_resource), 
      )
 
- * And as for handlers.py::
+ * 与之对应的 handlers.py::
 
      #!python
      
@@ -138,17 +135,17 @@ Examples speak louder than documentation:
              return { 'user': user, 'data_length': len(data) }
 
 
-And that's all there's to it.
+以上就是一个完整例子。
 
-Getting Help
-------------
-
-Piston is well documented and has an ever-growing FAQ. Feel free to add entries you find helpful to the FAQ.
-
-Go read the :ref:`documentation`
-
-Contents
+寻求帮助
 --------
+
+Piston拥有良好的文档（wrongway吐槽：我看未必）以及一个正在不断完善的FAQ（wrongway再吐：没多少内容）。当您发现有用信息时请添加到FAQ中。
+
+开始阅读 :ref:`documentation`
+
+内容
+----
 
 .. toctree::
    :maxdepth: 2
@@ -156,8 +153,8 @@ Contents
    documentation
    faq
 
-Indices and tables
-==================
+目录
+====
 
 * :ref:`genindex`
 * :ref:`modindex`

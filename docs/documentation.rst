@@ -1,21 +1,24 @@
 .. _documentation:
 
-=============================
-Django Piston's documentation
-=============================
+====================
+Django Piston's 文档
+====================
 
 .. toctree::
    :maxdepth: 4	
 
----------------
-Getting Started
----------------
+----
+开始
+----
 
-Getting started with Piston is easy. Your API code will look and behave just like any other Django application. It will have an URL mapping and handlers defining resources.
+入门Piston非常容易。用Piston写出来的API代码，无论是形式还是表现都与其他Django应用无异。
+API代码使用URL映射一组handlers对资源进行定义。
 
-To get started, it is recommended that you place your API code in a separate folder, e.g. 'api'.
+（wrongway在这里强调一下：原文档部分文字含糊，一些概念混淆，比如handler，可能是一个Handler类，也可能是一个Hanlder实例对象，也可能是Handler类的read/update等方法，阅读时请注意）
 
-Your application layout could look like this::
+在入门之前，建议您为API代码创建一个单独的目录，比如 'API' 。
+
+我们的应用结构如下::
 
     urls.py
     settings.py
@@ -28,7 +31,7 @@ Your application layout could look like this::
        urls.py
        handlers.py
 
-Then, define a "namespace" where your API will live in your top-level urls.py, like so::
+接下来，在最上层urls.py中定义一个'namespace'，以对应API，如下::
 
     #!python
     
@@ -37,17 +40,19 @@ Then, define a "namespace" where your API will live in your top-level urls.py, l
        (r'^api/', include('mysite.api.urls')),
     )
 
-This will include the API's urls.py for anything beginning with 'api/'.
+如上所设，包含API的urls.py将处理所有以'api/'开头的网址。
 
-Next up we'll look at how we can create resources and how to map URLs to them.
+接下来将展示如何创建资源，以及如何将URL与资源挂钩。
 
----------
-Resources
----------
+---------------
+资源(Resources)
+---------------
 
-A "Resource" is an entity mapping some kind of resource in code. This could be a blog post, a forum or even something completely arbitrary.
+资源(Resource)指的是代码中映射各种数据的实体。可以是博文、评论以及其他任何数据。
 
-Let's start out by creating a simple handler in handlers.py::
+(Wrongway吐槽：其实这一节是讲Handler的...)
+
+下面，我们在handlers.py中创建一个简单的handler::
 
     #!python
 
@@ -61,23 +66,27 @@ Let's start out by creating a simple handler in handlers.py::
        def read(self, request, post_slug):
           ...
 
-Piston lets you map resource to models, and by doing so, it will do a lot of the heavy lifting for you.
+Piston通过handler将资源与models进行映射，这个过程中Piston做了很多繁重的幕后工作，为开发者节省了大量精力。
 
-A resource can be just a class, but usually you would want to define at least 1 of 4 methods:
-  
- :read: is called on **GET** requests, and should never modify data (idempotent.)
+Resource必须是一个类，通常情况下，Resource要实现下列四个方法中的一个或多个：
 
- :create: is called on **POST**, and creates new objects, and should return them (or :ref:`rc.CREATED`.)
+ :read: 由 **GET** 动作调用，获取对象而不做数据修改(该方法是幂等的)
 
- :update: is called on **PUT**, and should update an existing product and return them (or :ref:`rc.ALL_OK`.)
+ :create: 由 **POST** 动作调用，创建新对象(们)并返回该对象(们)(或是返回 :ref:`rc.CREATED`.)
 
- :delete: is called on **DELETE**, and should delete an existing object. Should not return anything, just :ref:`rc.DELETED`.
+ :update: 由 **PUT** 动作调用，更新某个已存在的对象并返回该对象(或是返回 :ref:`rc.ALL_OK`.)
 
-In addition to these, you may define any other methods you want. You can use these by including their names in the  ``fields`` directive, and by doing so, the function will be called with a single argument: The instance of the ``model``. It can then return anything, and the return value will be used as the value for that key.
+ :delete: 由 **DELETE** 动作调用，删除某个已存的对象，只返回 :ref:`rc.DELETED` 。
 
-**NB**: These "resource methods" should be decorated with the @classmethod decorator, as they will not always receive an instance of itself. For example, if you have a UserHandler defined, and you return a User from another handler, you will not receive an instance of that handler, but rather the UserHandler.
+除此之外，我们还可以定义其他我们所需的方法。只要在 ``fields`` 中填写方法名称，该方法就会被调用，
+并在调用时自动传入 ``model`` 的实例做为参数。
+该方法的返回值将用做该key(方法名称)的值，返回值不做限制，可以为任意类型。
 
-Since a single handler can be responsible for both single- and multiple-object data sets, you can differentiate between them in the read() method like so::
+**NB**: 上述自定义的 "resource methods" 应该被 @classmethod 修饰。因为使用这些自定义方法时Piston未必会对Handler进行实例化。
+假设你已经定义了一个UserHandler类，并在该类中自定义了一个返回User对象的方法，在这种情况下，Piston是不会调用UserHandler实例的自定义对象方法，
+只会调用UserHander类的自定义的类方法。
+
+一个handler即可以表示单独的一个对象，也可以表示多个对象的集合，因此我们可以在read()方法中分别处理这两种情况::
 
     #!python
     
@@ -102,19 +111,20 @@ Since a single handler can be responsible for both single- and multiple-object d
                 return base.all() # Or base.filter(...)
 
 
---------
-Emitters
---------
+----------------
+发射器(Emitters)
+----------------
 
-Emitters are what spews out the data, and are the things responsible for speaking YAML, JSON, XML, Pickle and Django. They currently reside in ``emitters.py`` as ``XMLEmitter``, ``JSONEmitter``, ``YAMLEmitter``, ``PickleEmitter`` and ``DjangoEmitter``.
+发射器(Emitters) 表示输出的数据类型，可以是 YAML, JSON, XML, Pickle 或 Django ，分别对应 ``emitters.py`` 中的 ``XMLEmitter``, ``JSONEmitter``, ``YAMLEmitter``, ``PickleEmitter`` 和 ``DjangoEmitter`` 。
 
-Writing your own emitters is easy, all you have to do is create a class that subclasses ``Emitter`` and has a ``render`` method. The render method will receive 1 argument, 'request', which is a copy of the request object, which is useful if you need to look at request.GET (like defining callbacks, like the JSON emitter does.)
+编写自己的emitters也很容易，要做的仅仅是创建一个继承 ``Emitter`` 的派生类，然后在其中创建 ``render`` 方法。
+render方法接收一个 'request' 参数，该参数是一个请求(request)对象的拷贝。 多了解一下request.GET是很有必要的。 (比如定义回调，JSON的输出)
 
-To get the data to serialize/render, you can call ``self.construct()`` which always returns a dictionary. From there, you can do whatever you want with the data and return it (as a unicode string.)
+要将数据进行序列化/渲染，需要调用 ``self.construct()`` ，该方法始终返回一个数据字典，我们就可以对字典做任何想做的操作，再将其返回（返回值须是unicode字符串）。
 
-**NB**: New in <<cset 23ebc37c78e8>>: Emitters can now be registered with the ``Emitter.register`` function, and can be removed (in case you want to remove a built-in emitter) via the ``Emitter.unregister`` function.
+**NB**: 可以用 ``Emitter.register`` 函式注册Emitters，同样也可以用 ``Emitter.unregister`` 函式来移除注册（假使你想移除一个内置emitter）。
 
-The built-in emitters are registered like so::
+内置的emitter注册::
 
     #!python
     
@@ -123,11 +133,13 @@ The built-in emitters are registered like so::
     
     Emitter.register('json', JSONEmitter, 'application/json; charset=utf-8')
 
-If you write your own emitters, you can import Emitter and call 'register' on it to put your emitter into action. You can also overwrite built-in, or existing emitters, by using the same name (the first argument.)
+自定义emitter时，可以引入Emitter模块并调用 'register' 对其注册，从而使自定义的emitter生效。
+也可以利用同名数据类型(即传入的第一个参数)来覆写内置或是已存在的emitters。
 
-This makes it very easy to add support for extended formats, like protocol buffers or CSV.
+上述实践，使得Piston添加其他形式的Emitter扩展变得非常容易，比如protocal buffers或是CSV。
 
-Emitters are accessed via the ?format GET argument, e.g. '/api/blogposts/?format=yaml', but since <<cset 23ebc37c78e8>>, it is now possible to access them via a special keyword argument in your URL mapping. This keyword is called 'emitter_format' (to not clash with your own 'format' keyword), and can be used like so::
+可以通过 '?format=' GET参数(例如 '/api/blogposts/?format=yaml')为Emitter设置格式。不过新版本的Piston中，我们可以在URL映射中配置
+'emitter_format' 关键字参数来设置Emitters（与'format'关键字并不冲突），如下::
 
     #!python
     
@@ -135,9 +147,9 @@ Emitters are accessed via the ?format GET argument, e.g. '/api/blogposts/?format
        url(r'^blogposts(?P<emitter_format>.+)$', ...),
     )
 
-Now a request for /blogposts.json will use the JSON emitter, etc.
+这样，/blogposts.json 就会使用 JSON emitter。
 
-Additionally, you may specify the format in your URL mapping, via the keyword arguments shortcut::
+此外，我们还可以在URL映射中直接设置关键字参数来指定emitter格式::
 
     #!python
     
@@ -145,13 +157,13 @@ Additionally, you may specify the format in your URL mapping, via the keyword ar
        url(r'^blogposts$', resource_here, { 'emitter_format': 'json' }),
     )
 
-------------
-Mapping URLs
-------------
+---------------------
+URL映射(Mapping URLs)
+---------------------
 
-URL mappings in Piston work just like they do in Django. Lets map our BlogpostHandler:
+Piston的URL映射规则与Django无异。以BlogpostHandler为例：
 
-In urls.py::
+在 urls.py 中::
 
     #!python
     
@@ -166,20 +178,25 @@ In urls.py::
        url(r'^blogposts/', blogpost_handler),
     )
 
-Now any request coming in to /api/blogpost/some-slug-here/ or /api/blogposts/ will map to BlogpostHandler, with the two different data sets being differentiated in the handler itself. Note that a single handler can be used both for single-object and multiple-object resources. 
+见上，任何对 /api/blogpost/some-slug-here/ 和 /api/blogposts/ 的访问都映射到BlogpostHandler，
+分别对应同一个handler的两种不同数据集。
+要注意:一个单独的handler可以处理单个对象，也可以处理多个对象的集合。
 
 .. _anonymous_resources:
 
-Anonymous Resources
-===================
+匿名资源(Anonymous Resources)
+=============================
 
-Resources can also be "anonymous". What does this mean? This is a special type of resource you can instantiate, and it will be used for requests that aren't authorized (via OAuth, Basic or any authentication handler.)
+资源也可以是匿名的("anonymous")。匿名资源即是一种可以实例化的特殊资源，
+它用于未经授权(未通过OAuth,Basic或是其他认证handler)的请求。
 
-For example, if we look at our BlogpostHandler from earlier, it might be interesting to offer anonymous access to posts, although we don't want to allow anonymous users to create/update/delete posts. Also, we don't want to expose all the fields authorized users see.
+举个例子，本文前面的BlogpostHandler，允许匿名访问博文。
+但我们并不想让匿名用户也能够创建/更新/删除博文，也不想让未经授权的用户看到所有字段。
 
-This can be done by creating another handler, inheriting AnonymousBaseHandler (instead of BaseHandler.) This also takes care of the heavy lifting for you.
+类似的需求可以通过创建继承自AnonymousBaseHandler(而不是BaseHandler)的新handler来实现。
+这样做可以省却很多繁重的工作量。
 
-Like so::
+如下::
 
     #!python
     
@@ -193,43 +210,45 @@ Like so::
        anonymous = AnonymousBlogpostHandler
        # same stuff as before 
 
-You don't need a "proxy handler" subclassing BaseHandler to use anonymous handlers, you can just point directly at an anonymous resource as well.
+我们没必要为了使用匿名handlers，就设置一个继承自BaseHandler的代理handler("proxy handler")。
+反而是象上例这般直接指向一个匿名资源，更为实用。
 
 .. _working_with_models:
 
--------------------
-Working with Models
--------------------
+-------------------------------
+使用Models(Working with Models)
+-------------------------------
 
-Piston allows you to tie to a model, but does not require it. The benefit you get from doing so, will become obvious when you work with it:
+Piston可以绑定某个model，但并不依赖该model。这样做的好处很明显:
 
-* If you don't override read/create/update/delete it provides sensible defaults (if the method is allowed by ``allow_methods`` of course.)
-* You don't have to specify ``fields`` or ``exclude`` (but you still can, they aren't mutually exclusive!)
-* By using a model in a handler, Piston will remember your ``fields``/``exclude`` directives and use them in other handlers who return objects of that type (unless overridden.)
+* 没有覆写read/create/update/delete时，Piston就提供适用的默认处理(前提是方法已经出现在 ``allow_methods`` 中)。
+* 没必要必须指定 ``fields`` 和 ``exclude`` (但你可以这么做，因为它们之间并不是互斥的)
+* 如果已经在某个handler中使用了某个model，那么Piston会记住该model的 ``fields``/``exclude`` 设置，并在同样返回该model的其他handlers中继续使用该设置(除非被覆写)。
 
-As we've seen earlier, tying to a model is as simple as setting the ``model`` class variable on a handler.
+正如我们之前所见的，在handler中绑定某个model就只需设置 ``model`` 类参数这么简单。
 
-Also see: `Why does Piston use fields from previous handlers <http://bitbucket.org/jespern/django-piston/wiki/FAQ#why-does-piston-use-fields-from-previous-handlers>`_
+扩展阅读: `为什么Piston要记住之前的handlers所记录的fields信息 <http://bitbucket.org/jespern/django-piston/wiki/FAQ#why-does-piston-use-fields-from-previous-handlers>`_
 
---------------------
-Configuring Handlers
---------------------
+----------------------------------
+配置Handlers(Configuring Handlers)
+----------------------------------
 
-Handlers can be configured with 4 different variables.
+Handlers使用用四个参数进行配置。
 
 
 Model
 =====
 
-The model to tie to. See :ref:`working_with_models`.
+用于绑定model，查看 :ref:`working_with_models`.
 
 .. _fields_and_exclude:
 
 Fields/Exclude
 ==============
 
-A list of fields to include or exclude. Accepts nested listing, and follows foreign keys and manytomany fields.
-Also accepts compiled regular expressions. E.g.::
+返回的数据中应包含和排除的字段列表。允许内嵌，可以是外键字段以及多对多字段。
+
+也可以是编译后的正则表达式，例如::
 
     #!python
     import re
@@ -238,16 +257,15 @@ Also accepts compiled regular expressions. E.g.::
         fields = ('title', 'content', ('author', ('username', 'first_name')))
         exclude = ('id', re.compile('^private_'))
 
-
-If User can access posts via a Many2many/ForeignKey fields then::
+用户可以通过Many2many/ForeignKey字段访问博文，如下::
 
     class UserHandler(BaseHandler):
         model = User
         fields = ('name', ('posts', ('title', 'date')))
 
-will show the title and date from a users posts.
+返回的数据会包含用户名称以及该用户发布的博文标题和日期。
 
-To use the default handler for a nested resource specify an empty list of fields::
+对于fields中列表为空的内嵌资源，Piston会使用默认的handler，如下::
 
     class PostHandler(BaseHandler):
         model = Post
@@ -257,51 +275,63 @@ To use the default handler for a nested resource specify an empty list of fields
         model = User
         fields = ('name', ('posts', ()))
 
-This UserHandler shows all fields for all posts for a user excluding the date.
+UserHandler会显示一个用户所有博文的所有字段，但不包括博文的发布日期date。
 
-Neither ``fields``, nor ``exclude`` are required, and either one can be used by itself.
+``fields`` 和 ``exclude`` 都不是必须的，二者皆无时Piston也可以使用。
 
 Anonymous
 =========
 
-A pointer to an alternate anonymous resource. See :ref:`anonymous_resources`
+指向可替代的匿名资源。查看 :ref:`anonymous_resources`
 
---------------
-Authentication
---------------
+--------------------
+认证(Authentication)
+--------------------
 
-Piston supports pluggable authentication through a simple interface. It comes with 2 built-in authentication mechanisms, namely ``piston.authentication.HttpBasicAuthentication`` and ``piston.authentication.OAuthAuthentication``. The Basic auth handler is very simple, and you should use this for reference if you want to roll your own. 
+Piston通过一个简单的接口支持可插换的认证，自带两种内置的认证机制，分别是 ``piston.authentication.HttpBasicAuthentication`` 和 ``piston.authentication.OAuthAuthentication`` 。
+Basic auth handler非常简单，如果我们要编写自有的认证handler，它无疑很有参考价值。
 
-**Note**: that using ``piston.authentication.HttpBasicAuthentication`` with apache and mod_wsgi requires you to add the ``WSGIPassAuthorization On`` directive to the server or vhost config, otherwise django-piston cannot read the authentication data from  ``HTTP_AUTHORIZATION`` in ``request.META``. See: http://code.google.com/p/modwsgi/wiki/ConfigurationDirectives#WSGIPassAuthorization.
+**Note**: 在apache或nginx下使用 ``piston.authentication.HttpBasicAuthentication`` ，须要在服务器或虚拟主机配置时添加
+``WSGIPassAuthorization On`` 指令，否则django-piston不会
+从 ``request.META`` 的 ``HTTP_AUTHORIZATION`` 中读取认证数据。详看: http://code.google.com/p/modwsgi/wiki/ConfigurationDirectives#WSGIPassAuthorization.
 
-An authentication handler is a class, which must have 2 methods: ``is_authenticated`` and ``challenge``. 
+认证Handler必须是一个类，且必须实现 ``is_authenticated`` 和 ``challenge`` 两个方法。
 
-``is_authenticated`` will receive exactly 1 argument, a copy of the ``request`` object Django receives. This object will hold all the information you will need to authenticate a user, e.g. ``request.META.get('HTTP_AUTHENTICATION')``.
+``is_authenticated`` 只接收一个参数，即Django接收的 ``request`` 对象的一个拷贝。
+该对象包含认证一个用户所需的全部信息，比如 ``request.META.get('HTTP_AUTHENTICATION')``.
 
-Upon successful authentication, this function must set ``request.user`` to the correct ``django.contrib.auth.models.User`` object. This allows for subsequent handlers to identify who is logged in.
+认证成功之后，该函式必须将 ``request.user`` 设为正确的 ``django.contrib.auth.models.User`` 对象。
+这样做是考虑到随后的handlers要确认是哪个用户已经登录。
 
-It must return either True or False, indicating whether the user was logged in.
+该函式必须返回True或False，以表示该用户是否登录成功。
 
-For cases where authentication fails, is where ``challenge`` comes in. 
+对于认证失败的情况，就交由 ``challenge`` 处理。
 
-``challenge`` will receive no arguments, and must return a ``HttpResponse`` containing the proper challenge instructions. For Basic auth, it will return an empty response, with the header ``WWW-Authenticate`` set, and status code 401. This will tell the receiving end that they need to supply us with authentication.
+``challenge`` 不接收任何参数，必须返回一个包含正确cahllenge指令的 ``HttpResponse`` 对象。
+对于Basic auth来说，该函式返回一个带有 ``WWW-Authenticate`` 报头的，状态码为401的空响应(response)。
+并通知接收端要提供认证信息。
 
-For anonymous handlers, there is a special class, ``NoAuthentication`` in ``piston.authentication`` that always returns True for ``is_authenticated``.
+针对匿名handlers，Piston提供了一个特珠的类： ``piston.authentication`` 中的 ``NoAuthentication`` 。
+该类始终返回 ``is_authenticated`` 为 True。
 
 OAuth
 =====
 
-OAuth is the preferred means of authorization, because it distinguishes between "consumers", i.e. the approved application on your end which is using the API. Piston knows and respects this, and makes good use of it, for example when you use the @throttle decorator, it will limit on a per-consumer basis, keeping services operational even if one service has been throttled.
+OAuth是首选的认证方式，因为它能分辨消费者"consumers"，也就是说，它能识别使用该API的已认证的应用。
+Piston深知和尊重这一点，并对此善加利用，比如当我们使用 @throttle 装饰器时，
+它于底层限制每一个消费者应用，维系服务运转，即使当中某个服务已经达到限制配额。
 
----------------
-Form Validation
----------------
+-------------------------
+表单验证(Form Validation)
+-------------------------
 
-Django has an excellent built-in form validation facility, and Piston can make good use of this.
+Django拥有一套出色的内置表单验证机制，Piston对此善加利用。
 
-You can decorate your actions with a @validate decorator, which receives 1 required argument, and one optional. The first argument is the form it will use for validation, and the second argument is the place to look for data. For the ``create`` action, this is 'POST' (default), and for ``update``, it's 'PUT'.
+我们可以对某个方法使用@validate装饰器，该装饰器接收两个参数。
+第一个参数是必须的，即用于验证的表单，第二个参数是可选的，即提交数据的动作。
+对于 ``create`` ，默认的动作是 'POST' ，对于 ``update`` ，动作就是 'PUT' 。
 
-For example::
+举个例子(使用ModelForm)::
 
     #!python
     
@@ -318,7 +348,7 @@ For example::
     def create(request, ...):
         ...
 
-Or with a normal form::
+使用一个普通form::
 
     #!python
     
@@ -335,7 +365,11 @@ Or with a normal form::
     def update(...):
         ...
 
-If data sent to an action that is decorated with a @validate action does not pass the forms ``is_clean`` method, Piston will return an error to the client, and will not execute the action. If the validation passes, then the form object is attached to the request object. Thus you can get to the form (and thus the cleaned_data) via ``request.form`` as in this example::
+
+若某个方法被@validate装饰，那么发送给该方法的数据如果没有通过表单本身的 ``is_clean`` 方法验证，
+Piston就会禹客户端返回错误，而不运行任何操作。如果通过了验证，
+表单对象就会附加到请求(request)对象中。
+然后我们可以通过 ``request.form`` 获取表单(可以进一步通过cleaned_data取得验证后的数据)，如下例::
 
     #!python
     
@@ -344,13 +378,16 @@ If data sent to an action that is decorated with a @validate action does not pas
         return {'msg': request.form.cleaned_data['msg']}
 
 
-----------------------------
-Helpers, utils & @decorators
-----------------------------
+-------------------------------------------------------
+辅助方法，工具类 & 装饰器(Helpers, utils & @decorators)
+-------------------------------------------------------
 
-For your convenience, there's a set of helpers and utilities you can use. One of those is ``rc`` from ``piston.utils``. It contains a set of standard returns that you can return from your actions to indicate a certain situation to the client.
+出于方便，Piston提供了一组辅助和工具方法。
+其中一个便是 ``piston.utils`` 中的 ``rc`` ，它包含了一组标准的响应返回。
+在Piston的动作中做为响应码返回给客户端，以表示某个特定的状态。
 
-Since <<cset 26293e3884f4>>, these return a **fresh** instance of HttpResponse, so you can use something like this::
+但在最新版本的Piston， ``rc`` 返回的则是一个 **新的** HttpResponse的实例（此前版本仅仅是返回状态码），
+使用如下::
 
     #!python
     
@@ -362,36 +399,44 @@ Since <<cset 26293e3884f4>>, these return a **fresh** instance of HttpResponse, 
     resp.write("This will not have the previous 'fine' text in it.")
     return resp
 
-This change is backwards compatible, as it overrides ``__getattr__`` to return a new instance rather than a singleton.
+
+新版本的Piston在返回码上的更改是后端兼容的，因为Piston仅仅是覆写了 ``__getattr__`` 方法以返回一个新实例，而非之前的符号。
 
 ==================   ================================   ======================
-Variable	     Result	       		    	Description
+变量(Variable)       结果(Result)                       描述(Description)
 ==================   ================================ 	======================
-rc.ALL_OK            200 OK                           	Everything went well.
-rc.CREATED           201 Created			Object was created.
-rc.DELETED           204 (Empty body, as per RFC2616)	Object was deleted.
-rc.BAD_REQUEST       400 Bad Request                    Request was malformed/not understood.
-rc.FORBIDDEN         401 Forbidden                   	Permission denied.
-rc.NOT_FOUND         404 Not Found                    	Resource not found.
-rc.DUPLICATE_ENTRY   409 Conflict/Duplicate           	Object already exists.
-rc.NOT_HERE          410 Gone                         	Object does not exist.
-rc.NOT_IMPLEMENTED   501 Not Implemented              	Action not available.
-rc.THROTTLED         503 Throttled                    	Request was throttled.
+rc.ALL_OK            200 OK                           	操作成功(Everything went well)
+rc.CREATED           201 Created			对象创建成功(Object was created)
+rc.DELETED           204 (Empty body, as per RFC2616)	对象删除成功(Object was deleted)
+rc.BAD_REQUEST       400 Bad Request                    客户端请求错误或无法理解(Request was malformed/not understood)
+rc.FORBIDDEN         401 Forbidden                   	权限不足(Permission denied)
+rc.NOT_FOUND         404 Not Found                    	资源未找到(Resource not found)
+rc.DUPLICATE_ENTRY   409 Conflict/Duplicate           	对象已存在(Object already exists)
+rc.NOT_HERE          410 Gone                         	对象不存在(Object does not exist)
+rc.NOT_IMPLEMENTED   501 Not Implemented              	动作不可用(Action not available)
+rc.THROTTLED         503 Throttled                    	客户端请求受限(Request was throttled)
 ==================   ================================ 	======================
 
-----------
-Throttling
-----------
+--------------------------
+限制客户端请求(Throttling)
+--------------------------
 
-Sometimes you may not want people to call a certain action many times in a short period of time. Piston allows you to throttle requests on a global basis, effectively denying them access until the throttle has expired.
+有些场合，我们并不想让用户在短时间内过于频繁地调用某个动作。
+这时，可以让Piston在全局的基础层面上限制用户请求，在限制期限内有效地阻止客户端访问。
 
-Piston will respect OAuth (if used) and limit on a per-consumer basis. If OAuth is not used, Piston will resort to the logged in user, and for anonymous requests, it will fall back to the clients IP address.
+Piston在使用OAuth的情况下，会利用OAhth在每个消费者应用的底层对客户端访问进行限制。
+若没有使用OAuth，受限规则会取决于已登录用户；对于匿名请求，受限规则则取决于客户端IP地址。
 
-Throttling can be enabled via the special @throttle decorator. It takes 2 required arguments, and an optional third argument.
+限制客户端请求是通过添加@throttle装饰器实现的。该装饰器有两个必填参数和一个可选参数。
 
-The first argument is the number of requests allowed to be made within a certain amount of seconds. The second argument is the number of seconds. The third argument is optional, and should be a string, which will be appended to the cache key, effectively allowing you to do special throttling for a single action, or group several actions together. If omitted, the throttle will be global.
+第一个参数是某个时间段内允许的请求数量。
 
-For example::
+第二个参数就是该时间段的时长，以秒为单位。
+
+第三个参数是一个可选的字符串，
+会被添加到缓存key中。我们可以利用该参数为一组或一个动作进行限制。不提供该参数的话，Piston默认只对当前动作进行限制。
+
+举个例子::
 
     #!python
     
@@ -399,9 +444,9 @@ For example::
     def create(...):
 
 
-This will throttle if the client calls 'create' more than 5 times within 10 minutes.
+在这个例子中，客户端在10分钟内调用'create'的次数会限制在5次。
 
-You can do grouping like so::
+也可以对动作分组限制::
 
     #!python
     
@@ -411,29 +456,29 @@ You can do grouping like so::
     @throttle(5, 10*60, 'user_writes')
     def update(...):
 
-------------------------
-Generating Documentation
-------------------------
+----------------------------------
+生成文档(Generating Documentation)
+----------------------------------
 
-Chances are, if you intend to publicly expose your API, that you want to supply documentation. Writing documentation is a tedious process, and even more so if you change things in your code.
+公开发布API时提供相应的API使用文档。写文档本来就很沉闷繁琐，更改代码后再同步更新文档就更是如此。
 
-Luckily, Piston can do a lot of the heavy lifting for you here as well.
+幸运地是，Piston为此已经做了很多工作，使得我们可以方便地书写文档。
 
-In ``piston.doc`` there is a set of methods, allowing you to easily generate documentation using standard Django views and templates.
+``piston.doc`` 库提供了一组方法，方便我们使用Django的Views和Template生成文档。
 
-The function ``generate_doc`` returns a ``HandlerDocumentation`` instance, which has a few methods:
+``generate_doc`` 函式返回一个 ``HandlerDocumentation`` 实例，该实例有下列几个方法::
 
-* .model (get_model) returns the name of the handler,
-* .doc (get_doc) returns the docstring for the given handler.
-* .get_methods returns a list of methods available. The optional keyword argument ``include_defaults`` (False by default) will also include the fallback methods, if you haven't overloaded them. This may be useful if you want to use these, and still include them in your documentation.
+* .model (get_model) 返回该handler的名称。
+* .doc (get_doc) 返回给定的handler的docstring。
+* .get_methods 返回一组可用的方法列表。该方法接收一个可选的关键字参数 ``include_defaults`` (默认为False)，在参数为True且并没有重写默认方法的情况下，该方法的返回列表会包含默认方法。我们想使用默认方法并想将其包含在文档中时，该参数就能派上用场。
 
-``get_methods`` yields a set of ``HandlerMethod``'s which are more interesting:
+``get_methods`` 包含一系列有趣的 ``HandlerMethod`` 。
 
-* .signature (get_signature) will return the methods //signature//, stripping the first two arguments, which are always 'self' and 'request'. The client will not specify these two, so they are not interesting. Takes an optional argument, ``parse_optional`` (default True), which turns keyword arguments defaulting to None into "<optional>".
-* .doc (get_doc) returns the docstring for an action, so you should keep your handler/action specific documentation there.
-* .iter_args() will yield a 2-tuple with the argument name, and the default argument (or None.) If the default argument //is// None, the default argument will be 'None' (string). This will allow you to distinguish whether there is a default argument (even if it's None), or if it's empty.
+* .signature (get_signature) 返回 //signature// 方法, 前两个固定参数是Piston自动指定的 'self' 和 'request' 。客户端无须指定这两个参数，所以不必关心。还有一个可选的关键字参数 ``parse_optional`` (默认为 True)，用来将默认为None的关键字参数转变成 "<optional>" 。
+* .doc (get_doc) 返回某个动作的docstring，所以我们应该保证handler/action都有详细的文档描述。
+* .iter_args() 会返回一个结构为(参数名，默认参数值/None)的二元组。如果默认参数值也是None，该参数值会被转换成字符串'None'。这样做是为了避免和None相混淆.因此我们就能区分返回的默认参数值终究是None还是空。
 
-For example::
+例子::
 
     #!python
     
@@ -480,20 +525,22 @@ For example::
         
     print sig # -> 'read(repo_slug=None)'
     
-Resource URIs
-=============
 
-Each resource can have an URI. They can be accessed in the Handler via his .resource_uri() method.
+资源URL(Resource URIs)
+======================
 
-Also read [[FAQ#what-is-a-uri-template|FAQ: What is a URI Template]].
+每个资源都可以对应一个URI。调用资源的 .resource_uri() 方法就可以在Handler中访问该资源。
 
------
-Tests
------
+详见 [[FAQ#what-is-a-uri-template|FAQ: What is a URI Template]].
 
-<<user zerok>> wrote an initial testsuite for Piston, located in tests/. It uses zc.buildout to run the tests, and isolates an environment with Django, etc. The suite comes with two testrunners: tests/bin/test-1.0 and tests/bin/test-1.1 which run the tests against the respective version of Django and are made available after you're finished with the first two steps as described below.
+-----------
+测试(Tests)
+-----------
 
-Running the tests is very easy::
+Piston的初始测试案例放在在tests/下。要运行该测试需要安装zc.buildout，并使用zc.buildout创建一个Django下的隔离环境。
+该案例有两组测试，分别是 tests/bin/test-1.0 和 tests/bin/test-1.1 ，各自对应不同版本的Django。完成下面两个步骤就可以运行测试。
+
+运行测试很简单::
 
     $ python bootstrap.py 
     Creating directory './bin'.
@@ -523,24 +570,25 @@ Running the tests is very easy::
     Destroying test database...
 
 
-When running buildout make sure to pass it the -v option. There is currently a small problem with djangorecipe, which is used to create the testscripts etc., that causes the script to hang unless you use the "-v" option.
+运行buildout时一定要加上-v参数，之所以这么做，是因为不使用 "-v" 参数的话，在django下创建测试脚本时会导致脚本一直挂起。
 
-If you'd like to contribute, more tests are always welcome. There is coverage for many of the basic operations, but not 100%.
+如果您愿意为Piston贡献力量，欢迎您添加更多测试。因为当前测试仅仅覆盖了基本操作，还有很多欠缺之处。
 
---------------
-Receiving data
---------------
+------------------------
+接收数据(Receiving data)
+------------------------
 
-Piston, being layered on HTTP, works well with post-data (form data), but also works well with more expressive formats such as JSON and YAML.
+Piston运行在HTTP协议上，对于post的数据处理得很好，对于其他格式(JSON或YAML)的数据也处理得不错。
 
-This allows you to receive structured data easily, rather than just key-value pairs. Piston will attempt to deserialize incoming non-form data via a set of "loaders", depending on the Content-type specified by the client.
+Piston既能接收链值对数据，也很容易接收结构化数据。
+Piston会尝试通过一组"loader"来反序列化传入的非form数据，这些"loader"取决于客户端指定的内容类型(Content-type)。
 
-For example, if we send JSON to a handler giving the content-type "application/json", Piston will do 2 things:
+举个例子，如果我们给一个handler发送JSON数据，JSON内容类型(Content-Type)是 "application/json" ，Piston会做下面两件事情：
 
-# Place the deserialized data in ``request.data``, and
-# Set ``request.content_type`` to ``application/json``. For form data, this will always be None.
+# 将反序列化后的数据存放在 ``request.data`` 中
+# 将 ``request.content_type`` 设为 ``application/json`` 。对于form提交的数据而言，``request.content_type`` 则总是 None.
 
-You can use it like so (from  `testapp/handlers.py <http://bitbucket.org/jespern/django-piston/src/7042cd328873/tests/test_project/apps/testapp/handlers.py>`_)::
+可以如下这般使用 (查看  `testapp/handlers.py <http://bitbucket.org/jespern/django-piston/src/7042cd328873/tests/test_project/apps/testapp/handlers.py>`_)::
 
     #!python
 
@@ -558,22 +606,20 @@ You can use it like so (from  `testapp/handlers.py <http://bitbucket.org/jespern
             else:
                 super(ExpressiveTestModel, self).create(request)
     
-If we send the following JSON structure into that, it will handle it appropriately::
+如果我们传送下列JSON数据，也可以被很好的处理::
 
     #!python
     
     {"content": "test", "comments": [{"content": "test1"}, {"content": "test2"}], "title": "test"}
 
 
-It should be noted that sending //anything// that deserializes to this handler will also work, so you can send equally formatted YAML or XML, and the handler won't care.
+handler接收的任何数据都会被正常的反序列化，所以只要内容一致，无论格式是YAML还是XML，handler都能正常处理。
 
-If your handler doesn't accept post data (maybe it requires more verbose data), there's an easy way to require a specific type of data, via the ``utils.require_mime`` decorator.
+如果handler不接受客户端发送的数据（可能需要其他格式），可以用 ``utils.require_mime`` 装饰器来指定某种数据类型来解决这个问题。
 
-This decorator takes a list of types it requires, and you can use the shorthand too, like 'yaml', 'json', etc.
+该装饰器可以接收四种数据格式，以其短语名称来指定，分别是 'json', 'yaml', 'xml' 和 'pickle' 。
 
-There's also a shortcut for requiring 'json', 'yaml', 'xml' and 'pickle' all in one, called 'require_extended'.
-
-E.g.::
+比如::
 
     #!python
     class SomeHandler(BaseHandler):
@@ -585,19 +631,20 @@ E.g.::
 
 .. _streaming:
 
----------
-Streaming
----------
+-------------
+流(Streaming)
+-------------
 
-Since <<cset b0a1571ff61a>>, Piston supports streaming its output to the client. This is **disabled** per default, for one reason:
+Piston支持流输出至客户端。不过默认情况下该功能是被禁用的，原因是:
 
-* Django's support for streaming breaks with ``ConditionalGetMiddleware`` and ``CommonMiddleware``.
+* Django下的流输出会中止 ``ConditionalGetMiddleware`` 和 ``CommonMiddleware`` 。
 
-To get around this, Piston ships with two "proxy middleware classes" that won't execute during a streaming scenario, and hence won't look at (and exhaust) the data before sending it to the client. Without these, Django will look at the contents (to figure out E-Tags and Content-Length), and by doing so, the next peek it takes, will result in nothing.
+要绕过这一点不利因素，Piston提供了两个代理中间件("proxy middleware classes")，它们在流输出的情况下不会运行，因此不会在客户端收到数据之前
+查看和截断数据。如果不使用这两个中间件，Django就会跟踪输出的内容(以计算E-Tags和Content-Length)，因此会导致随后的接收的peek内容为空。
 
-In ``piston.middleware`` there are two classes you can effectively replace these with.
+在 ``piston.middleware`` 中有两个类用于替换 ``ConditionalGetMiddleware`` 和 ``CommonMiddleware`` 。
 
-In settings.py::
+在 settings.py::
 
     #!python
     
@@ -609,7 +656,8 @@ In settings.py::
     )
 
 
-Remove any mentions of ``ConditionalGetMiddleware`` and ``CommonMiddleware``, or it **won't work**. If you have any other middleware that looks at the content prior to streaming, you can wrap those in the conditional middleware proxy too::
+支除任何对 ``ConditionalGetMiddleware`` 和 ``CommonMiddleware`` 的引用，或者令这两中间件无效。
+若有其他中间件需要在流输出之前查看数据，也要使用代理中间件对其进行封装，如下::
 
     #!python
     
@@ -621,18 +669,18 @@ Remove any mentions of ``ConditionalGetMiddleware`` and ``CommonMiddleware``, or
     MyMiddlewareCompatProxy = compat_middleware_factory(MyMiddleware)
 
 
-And then install ``MyMiddlewareCompatProxy`` instead.
+然后在setting.py设置 ``MyMiddlewareCompatProxy`` 以取代原有中间件。
 
------------------------
-Configuration variables
------------------------
+-------------------------------
+配置项(Configuration variables)
+-------------------------------
 
-Piston is configurable in a couple of ways, which allows more granular control of some areas without editing the code.
+Piston 可以使用如下几个配置项来在某些方面做精细地控制，而不必修改代码。
 
 ==============================   ==========
 Setting                          Meaning
 ==============================   ==========
-settings.PISTON_EMAIL_ERRORS	 If (when) Piston crashes, it will email the administrators a backtrace (like the Django one you see during DEBUG = True)
-settings.PISTON_DISPLAY_ERRORS   Upon crashing, will display a small backtrace to the client, including the method signature expected.
-settings.PISTON_STREAM_OUTPUT    When enabled, Piston will instruct Django to stream the output to the client, but please read :ref:`streaming` before enabling it.
+settings.PISTON_EMAIL_ERRORS	 如果Piston崩溃，是否给管理员发邮件记录回溯信息(类似Django在 DEBUG = True 时会显示调试信息一样)
+settings.PISTON_DISPLAY_ERRORS   Piston崩溃之后, 是否在客户端显示简短的回溯信息（包括预期的函数名）
+settings.PISTON_STREAM_OUTPUT    为True时，Piston会通知Django将内容流输出至客户端，不过之前请详细阅 :ref:`streaming` 。
 ==============================   ==========
